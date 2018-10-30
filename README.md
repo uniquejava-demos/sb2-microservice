@@ -73,5 +73,10 @@ Enable后访问
 
 他们会返回相同的结果
 
+ZuulFilter中设置的header会pass到downstream service..但是downstream service通过RestTemplate调用downdownstream service的时候header信息会丢失.
+
+可以使用restTempate的exchange方法
+
+相关QA: https://stackoverflow.com/questions/10358345/making-authenticated-post-requests-with-spring-resttemplate-for-android
 
 

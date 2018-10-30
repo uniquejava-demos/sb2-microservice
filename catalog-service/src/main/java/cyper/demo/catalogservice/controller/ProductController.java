@@ -1,5 +1,8 @@
 package cyper.demo.catalogservice.controller;
+
 import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,29 +20,29 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ProductController {
 
-    private final ProductService productService;
+	private final ProductService productService;
 
-    @Autowired
+	@Autowired
 
-    public ProductController(ProductService productService) {
-        this.productService = productService;
+	public ProductController(ProductService productService) {
+		this.productService = productService;
 
-    }
+	}
 
-    @GetMapping("")
+	@GetMapping("")
 
-    public List<Product> allProducts() {
+	public List<Product> allProducts() {
 
-        return productService.findAllProducts();
+		return productService.findAllProducts();
 
-    }
+	}
 
-    @GetMapping("/{code}")
-    public Product productByCode(@PathVariable String code) {
+	@GetMapping("/{code}")
+	public Product productByCode(@PathVariable String code, HttpServletRequest request) {
+		log.info("1. should get header set from zuul filter: " + request.getHeader("AUTH_HEADER"));
+		return productService.findProductByCode(code)
+				.orElseThrow(() -> new ProductNotFoundException("Product with code [" + code + "] doesn't exist"));
 
-        return productService.findProductByCode(code)
-                .orElseThrow(() -> new ProductNotFoundException("Product with code ["+code+"] doesn't exist"));
-
-    }
+	}
 
 }

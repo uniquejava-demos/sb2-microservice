@@ -3,6 +3,8 @@ package cyper.demo.inventoryservice.controller;
 import java.util.List;
 import java.util.Optional;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +24,9 @@ public class InventoryController {
 	private InventoryItemRepository inventoryItemRepository;
 
 	@GetMapping("/api/inventory/{productCode}")
-	public ResponseEntity<InventoryItem> findInventoryByProductCode(@PathVariable("productCode") String productCode) {
+	public ResponseEntity<InventoryItem> findInventoryByProductCode(@PathVariable("productCode") String productCode,
+			HttpServletRequest request) {
+		log.info("2. should get header set from zuul filter: " + request.getHeader("AUTH_HEADER"));
 
 		Optional<InventoryItem> inventoryItem = inventoryItemRepository.findByProductCode(productCode);
 		if (inventoryItem.isPresent()) {
