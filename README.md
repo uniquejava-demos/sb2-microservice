@@ -26,7 +26,7 @@ Following are just a few Spring Cloud modules that can be used to address distri
 
 ## Cyper 的笔记
 
-1. spring cloud 中的任意一个项目都是一个独立的 spring boot application. 你需要某个 feature? 好的, 通过 start.spring.io 建一个 spring boot 项目,import as maven project.
+1. spring cloud 中的任意一个项目都是一个独立的 spring boot application. 你需要某个 feature? 好的, 通过 start.spring.io 建一个有对应 feature 的 spring boot 项目.
 2. 套路: start 上生成 zip 文件, 解压, 复制解压的目录到 eclipse, 然后 import from existing maven project.
 3. 在主类 xxxApplication 上加或不加注解, 在 application.properties 或 bootstrap.properties 稍微做一下配置. 就这些.
 
@@ -35,9 +35,10 @@ eureka 还挺有用, 但是 k8s 也是做这个事的, 是不是功能上有所�
 
 ### Config Server
 
-1. 模板: Config Server
-2. 注解: @EnableConfigServer
-3. 配置 application.properties
+1. 项目名称: config-server(8888)
+2. 模板: Config Server
+3. 注解: @EnableConfigServer
+4. 配置 application.properties
 
 ```
 spring.config.name=configserver
@@ -51,9 +52,10 @@ management.endpoints.web.exposure.include=*
 
 ### Config Client
 
-1. 模板: Config Client
-2. 注解: 无需注解
-3. 配置 bootstrap.properties
+1. 项目名称: catalog-service, inventory-service 等
+2. 模板: Config Client
+3. 注解: 无需注解
+4. 配置 bootstrap.properties
 
 ```
 spring.cloud.config.uri=http://localhost:8888
@@ -63,9 +65,10 @@ spring.cloud.config.uri=http://localhost:8888
 
 ### Config Client + Vault(Optional)
 
-1. 模板: Config Client + Vault Configuration
-2. 注解: 无需注解
-3. 配置 bootstrap.properties
+1. 项目名称: catalog-service, inventory-service 等
+2. 模板: Config Client + Vault Configuration
+3. 注解: 无需注解
+4. 配置 bootstrap.properties
 
 ```
 spring.cloud.vault.host=localhost
@@ -77,6 +80,104 @@ spring.cloud.vault.generic.backend=my-app
 ```
 
 需要启动 vault server 然后通过`vault write my-app/catalog-service @catalog-service-credentials.json`将对应的 credentials 事先 put 到 vault.
+
+### Eureka Server
+
+1. 项目名称: service-registry(8671)
+2. 模板: Eureka Server
+3. 注解: @EnableEurekaServer
+4. 配置 application.properties
+
+```
+eureka.instance.hostname=localhost
+eureka.client.register-with-eureka=false
+eureka.client.fetch-registry=false
+eureka.instance.lease-renewal-interval-in-seconds=30
+eureka.instance.prefer-ip-address=true
+```
+
+Eureka Server 也带 Eureka client 功能(为了实现 Eureka server 高可用, 可以配置多个 node)
+
+控制台: http://localhost:8761
+
+### Eureka Discovery
+
+1. 项目名称: catalog-service, inventory-service, shoppingcart-ui(也是 Zuul Proxy)
+2. 模板: Eureka Discovery
+3. 注解: 无需注解
+4. 配置 application.properties
+
+```
+eureka.client.service-url.defaultZone=http://localhost:8761/eureka/
+```
+
+### RestTemplate 实现 Service 间相互调用
+
+1. 项目名称: catalog-service
+2. 模板: 无
+3. 注解: 无
+
+需要注入的 Bean
+
+```java
+@Bean
+@LoadBalanced
+public RestTemplate restTemplate() {
+	return new RestTemplate();
+}
+```
+
+RestTemplate 用法
+
+```java
+ResponseEntity<ProductInventoryResponse> itemResEntity
+  = restTemplate.getForEntity(
+     "http://inventory-service/api/inventory/{code}", ProductInventoryResponse.class, productCode)
+```
+
+### Hystrix(Circuit Breaker)
+
+1. 项目名称: catalog-service
+2. 模板: Hystrix
+3. 注解: @EnableCircuitBreaker, @HystrixCommand(fallbackMethod = "getDefaultProductInventoryByCode")
+4. 配置 application.properties(可选)
+
+```
+hystrix.command.getProductInventoryByCode.execution.isolation.thread.timeoutInMilliseconds=2000
+hystrix.command.getProductInventoryByCode.circuitBreaker.errorThresholdPercentage=60
+```
+
+让 ProductService 通过 InventoryServiceClient(使用了@HystrixCommand 注解) 而非 RestTemplate 调用 inventory service.
+
+Hystrix stream: http://localhost:8181/actuator/hystrix.stream
+
+Hystrix Dashboard(未做实验)
+
+### Zuul
+
+1. 项目名称: shoppingcart-ui
+2. 模板: Zuul
+3. 注解: @EnableZuulProxy
+4. 配置 application.properties(可选)
+
+```
+zuul.proxy=/api
+zuul.routes.catalogservice.path=/catalog/**
+zuul.routes.catalogservice.serviceId=catalog-service
+zuul.routes.orderservice.path=/orders/**
+zuul.routes.orderservice.serviceId=order-service
+```
+
+ZuulFilter 的用法(这个是抽象类而非接口)
+
+声明一个 Bean 即可.
+
+```java
+@Bean
+AuthHeaderFilter authHeaderFilter() {
+	return new AuthHeaderFilter();
+}
+```
 
 ## 踩到的坑
 
@@ -103,7 +204,7 @@ Success! Data written to: my-app/catalog-service
 vault write my-app/catalog-service @catalog-service-credentials.json
 ```
 
-### eureka client
+### Eureka client 启动并不报错但是注册不到 eureka server?
 
 我把 pom 写错, 结果怎么配置都没用...
 
@@ -114,6 +215,8 @@ vault write my-app/catalog-service @catalog-service-credentials.json
 </dependency>
 ```
 
+正确的写法.
+
 ```xml
 <dependency>
 	<groupId>org.springframework.cloud</groupId>
@@ -121,7 +224,15 @@ vault write my-app/catalog-service @catalog-service-credentials.json
 </dependency>
 ```
 
-### 新增 inventory-service
+### 启动 service 时 spring.datasource.username 和 password 都为 null
+
+检查项:
+
+1. vault 的`myapp/application-name`之下有无对应的 key.
+2. config-repo 中 有无对应的 application-name.properties 文件.
+3. inventory-service 需要的 database 是否已创建.
+
+### 新增一个全功能的 service 要添加的依赖列表
 
 要添加的服务 web, jpa, mysql, config-client, eureka-discovery, lombok, vault
 
@@ -129,13 +240,7 @@ vault write my-app/catalog-service @catalog-service-credentials.json
 
 要把 credentials 加到 vault 对应的 key 下, `vault write my-app/inventory-service @inventory-service-credentials.json`
 
-### 给 catalog-service 添加 hystrix(circuit-breaker)
-
-让 ProductService 通过 InventoryServiceClient 而非 RestTemplate 调用 inventory service.
-
-http://localhost:8181/actuator/hystrix.stream
-
-### spring-cloud-starter-netflix-zuul/API Gateway/Edge Service
+### Zuul Proxy/API Gateway/Edge Service
 
 Enable 后访问
 
