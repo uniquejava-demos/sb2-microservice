@@ -7,16 +7,16 @@ startup
 ```sh
 ➜  vault server -dev
 
-➜  tmp1 vault secrets enable -path=my-app kv
+➜  vault secrets enable -path=my-app kv
 Success! Enabled the kv secrets engine at: my-app/
-➜  tmp1 vault write my-app/my-app password=123
+➜  vault write my-app/my-app password=123
 Success! Data written to: my-app/my-app
-➜  tmp1 vault read my-app/my-app
+➜  vault read my-app/my-app
 Key                 Value
 ---                 -----
 refresh_interval    768h
 password            123
-➜  tmp1 vault write my-app/catalog-service @catalog-service-credentials.json
+➜  vault write my-app/catalog-service @catalog-service-credentials.json
 Success! Data written to: my-app/catalog-service
 vault write my-app/catalog-service @catalog-service-credentials.json
 ```
@@ -48,3 +48,11 @@ spring.cloud.vault.generic.backend=my-app
 	<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 </dependency>
 ```
+
+### 新增inventory-service
+要添加的服务web, jpa, mysql, config-client, eureka-discovery, lombok, vault
+在git repo上要添加inventory-service.properties
+要把credentials加到vault对应的key下, `vault write my-app/inventory-service @inventory-service-credentials.json`
+
+
+
