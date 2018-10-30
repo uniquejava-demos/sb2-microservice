@@ -62,4 +62,16 @@ spring.cloud.vault.generic.backend=my-app
 
 http://localhost:8181/actuator/hystrix.stream
 
+### spring-cloud-starter-netflix-zuul/API Gateway/Edge Service
+Enable后访问
+
+> curl http://localhost:8181/api/products/P002
+
+等价于访问
+
+> curl http://localhost:8080/catalog-service/api/products/P002
+
+他们会返回相同的结果
+
+
 
