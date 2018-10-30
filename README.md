@@ -31,3 +31,20 @@ spring.cloud.vault.authentication=token
 spring.cloud.vault.token=xxxxxxxxxxxxxxx
 spring.cloud.vault.generic.backend=my-app
 ```
+
+### eureka client
+我把pom写错, 结果怎么配置都没用...
+
+```xml
+<dependency>
+	<groupId>org.springframework.cloud</groupId>
+	<artifactId>spring-cloud-netflix-eureka-client</artifactId>
+</dependency>
+```
+
+```xml
+<dependency>
+	<groupId>org.springframework.cloud</groupId>
+	<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+</dependency>
+```
