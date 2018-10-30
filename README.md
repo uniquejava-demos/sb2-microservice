@@ -51,8 +51,15 @@ spring.cloud.vault.generic.backend=my-app
 
 ### 新增inventory-service
 要添加的服务web, jpa, mysql, config-client, eureka-discovery, lombok, vault
+
 在git repo上要添加inventory-service.properties
+
 要把credentials加到vault对应的key下, `vault write my-app/inventory-service @inventory-service-credentials.json`
 
+
+### 给catalog-service添加hystrix(circuit-breaker)
+让ProductService通过InventoryServiceClient而非RestTemplate调用inventory service.
+
+http://localhost:8181/actuator/hystrix.stream
 
 
